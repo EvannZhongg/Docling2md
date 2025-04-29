@@ -2,10 +2,12 @@ import logging
 import time
 import base64
 import json
-import yaml  # 新增导入
-import hashlib  # 新增导入
+import yaml
+import hashlib
 from pathlib import Path
 from io import BytesIO
+import hashlib
+from pdf2image import convert_from_path
 
 import pandas as pd
 from PIL import Image
@@ -49,11 +51,31 @@ def generate_hash_from_file(file_path: Path) -> str:
 
 # 获取哈希值作为子目录名
 pdf_hash = generate_hash_from_file(input_pdf_path)
-output_dir = Path.cwd() / "output" / pdf_hash  # 修改为当前目录的 output/<hash>
+output_dir = Path.cwd() / "output" / pdf_hash
 output_dir.mkdir(parents=True, exist_ok=True)
 doc_filename = input_pdf_path.stem
 
+# === 获取PDF每页并保存为图片 ===
+def convert_pdf_to_images(pdf_path: Path, output_dir: Path):
+    # 从配置中获取 Poppler 路径
+    poppler_path = Path(config['POPPLER']['path'])
 
+    # 创建 page 子目录
+    page_dir = output_dir / "page"
+    page_dir.mkdir(parents=True, exist_ok=True)
+
+    # 使用 pdf2image 将每一页转换为图片
+    pages = convert_from_path(
+        pdf_path,
+        dpi=300,  # 300 DPI
+        poppler_path=str(poppler_path)  # 添加 poppler_path 参数
+    )
+
+    for page_num, page in enumerate(pages, start=1):
+        page_image_filename = page_dir / f"page-{page_num}.png"  # 修改为子目录路径
+        page.save(page_image_filename, 'PNG')
+        log.info(f"保存 PDF 第 {page_num} 页：{page_image_filename.resolve()}")
+        
 # === 图像 + Prompt → Markdown 表格（Qwen）===
 def ask_table_from_image(pil_image: Image.Image, prompt: str = TABLE_REPAIR_PROMPT) -> str:
     try:
@@ -146,6 +168,9 @@ def convert_pdf_to_markdown_with_images():
     json_data = []
     table_counter = 0
     picture_counter = 0
+
+    # 获取并保存 PDF 每一页为图片
+    convert_pdf_to_images(input_pdf_path, output_dir)
 
     for element, level in document.iterate_items():
         if isinstance(element, TableItem):

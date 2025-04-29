@@ -3,6 +3,7 @@ import time
 import base64
 import json
 import yaml  # 新增导入
+import hashlib  # 新增导入
 from pathlib import Path
 from io import BytesIO
 
@@ -17,6 +18,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from prompt.VLM_prompt import VLM_PROMPT
 from prompt.text_type_prompt import TEXT_TYPE_PROMPT
 from prompt.table_repair_prompt import TABLE_REPAIR_PROMPT
+
 
 # 加载配置文件
 with open('config.yaml', 'r', encoding='utf-8') as f:
@@ -36,7 +38,18 @@ TEXT_API_URL = config['OPENAI']['base_url']
 TEXT_MODEL = config['OPENAI']['model']
 
 input_pdf_path = Path("D:/Personal_Project/SmolDocling/pdfs/APD_Series_203250D.pdf")
-output_dir = Path("D:/Personal_Project/SmolDocling/output6")
+
+# 根据 PDF 文件路径生成哈希值
+def generate_hash_from_file(file_path: Path) -> str:
+    md5_hash = hashlib.md5()
+    with file_path.open("rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
+
+# 获取哈希值作为子目录名
+pdf_hash = generate_hash_from_file(input_pdf_path)
+output_dir = Path.cwd() / "output" / pdf_hash  # 修改为当前目录的 output/<hash>
 output_dir.mkdir(parents=True, exist_ok=True)
 doc_filename = input_pdf_path.stem
 
@@ -75,7 +88,7 @@ def ask_image_vlm_base64(pil_image: Image.Image, prompt: str = VLM_PROMPT) -> st
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"}}
         ]
         completion = client.chat.completions.create(
-            model="qwen-vl-plus",  # 保持原样，因为配置中没有这个模型
+            model="qwen-vl-plus",
             messages=[{"role": "user", "content": content}]
         )
         return completion.choices[0].message.content.strip()
@@ -137,9 +150,10 @@ def convert_pdf_to_markdown_with_images():
     for element, level in document.iterate_items():
         if isinstance(element, TableItem):
             table_counter += 1
-            image_filename = output_dir / f"{doc_filename}-table-{table_counter}.png"
+            # 使用哈希值生成图片/表格文件名
+            table_image_filename = output_dir / f"{pdf_hash}-table-{table_counter}.png"
             pil_img = element.get_image(document)
-            pil_img.save(image_filename, "PNG")
+            pil_img.save(table_image_filename, "PNG")
             table_df: pd.DataFrame = element.export_to_dataframe()
 
             if not table_df.columns.is_unique or table_df.shape[1] < 2:
@@ -168,7 +182,7 @@ def convert_pdf_to_markdown_with_images():
                 json_data.append({
                     "type": "table",
                     "level": level,
-                    "image": image_filename.name,
+                    "image": table_image_filename.name,
                     "source": "reconstructed_by_qwen_chunked",
                     "markdown": "\n".join(full_md_lines),
                     "page_number": element.prov[0].page_no  # Add page number to JSON
@@ -181,24 +195,25 @@ def convert_pdf_to_markdown_with_images():
             json_data.append({
                 "type": "table",
                 "level": level,
-                "image": image_filename.name,
+                "image": table_image_filename.name,
                 "data": table_df.to_dict(orient="records"),
                 "page_number": element.prov[0].page_no  # Add page number to JSON
             })
 
         elif isinstance(element, PictureItem):
             picture_counter += 1
-            image_filename = output_dir / f"{doc_filename}-picture-{picture_counter}.png"
+            # 使用哈希值生成图片文件名
+            picture_image_filename = output_dir / f"{pdf_hash}-picture-{picture_counter}.png"
             pil_img = element.get_image(document)
-            pil_img.save(image_filename, "PNG")
+            pil_img.save(picture_image_filename, "PNG")
             caption = ask_image_vlm_base64(pil_img)
 
             # 生成图片链接 + 描述为图片标题
-            markdown_lines.append(f"\n![{caption}](./{image_filename.name})\n")
+            markdown_lines.append(f"\n![{caption}](./{picture_image_filename.name})\n")
             json_data.append({
                 "type": "picture",
                 "level": level,
-                "image": image_filename.name,
+                "image": picture_image_filename.name,
                 "caption": caption,
                 "page_number": element.prov[0].page_no  # Add page number to JSON
             })
@@ -219,11 +234,11 @@ def convert_pdf_to_markdown_with_images():
                     })
 
     # 保存结果
-    markdown_file = output_dir / f"{doc_filename}.md"
+    markdown_file = output_dir / f"{pdf_hash}.md"
     with markdown_file.open("w", encoding="utf-8") as f:
         f.write("\n".join(markdown_lines))
 
-    json_file = output_dir / f"{doc_filename}.json"
+    json_file = output_dir / f"{pdf_hash}.json"
     with json_file.open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
 

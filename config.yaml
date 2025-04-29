@@ -1,0 +1,12 @@
+OPENAI:
+  api_key: "sk-e6412d3957f44da9b3774f7149860c15"
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-chat"
+
+VLM:
+  api_key: "sk-25073b1d5af2464292d41bfb04d92a7e"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen2.5-vl-72b-instruct"
+
+OCR:
+  enabled: true

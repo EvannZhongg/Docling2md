@@ -68,14 +68,14 @@ def convert_pdf_to_images(pdf_path: Path, output_dir: Path):
     pages = convert_from_path(
         pdf_path,
         dpi=300,  # 300 DPI
-        poppler_path=str(poppler_path)  # 添加 poppler_path 参数
+        poppler_path=str(poppler_path)
     )
 
     for page_num, page in enumerate(pages, start=1):
-        page_image_filename = page_dir / f"page-{page_num}.png"  # 修改为子目录路径
+        page_image_filename = page_dir / f"page-{page_num}.png"
         page.save(page_image_filename, 'PNG')
         log.info(f"保存 PDF 第 {page_num} 页：{page_image_filename.resolve()}")
-        
+
 # === 图像 + Prompt → Markdown 表格（Qwen）===
 def ask_table_from_image(pil_image: Image.Image, prompt: str = TABLE_REPAIR_PROMPT) -> str:
     try:
@@ -145,6 +145,18 @@ def split_table_image_rows(pil_img: Image.Image, row_height: int = 400) -> list:
         slices.append(crop)
     return slices
 
+# === 获取元素的边界框 ===
+def get_bbox(element):
+    if hasattr(element, 'prov') and element.prov:
+        bbox = element.prov[0].bbox
+        return {
+            "left": bbox.l,
+            "top": bbox.t,
+            "right": bbox.r,
+            "bottom": bbox.b,
+            "coord_origin": bbox.coord_origin
+        }
+    return None
 
 # === 主流程 ===
 def convert_pdf_to_markdown_with_images():
@@ -173,6 +185,9 @@ def convert_pdf_to_markdown_with_images():
     convert_pdf_to_images(input_pdf_path, output_dir)
 
     for element, level in document.iterate_items():
+        # 获取元素的边界框
+        bbox = get_bbox(element)
+
         if isinstance(element, TableItem):
             table_counter += 1
             # 使用哈希值生成图片/表格文件名
@@ -210,7 +225,8 @@ def convert_pdf_to_markdown_with_images():
                     "image": table_image_filename.name,
                     "source": "reconstructed_by_qwen_chunked",
                     "markdown": "\n".join(full_md_lines),
-                    "page_number": element.prov[0].page_no  # Add page number to JSON
+                    "page_number": element.prov[0].page_no,  # Add page number to JSON
+                    "bbox": bbox  # 添加边界框到 JSON
                 })
                 continue  # 跳过原始处理
 
@@ -222,7 +238,8 @@ def convert_pdf_to_markdown_with_images():
                 "level": level,
                 "image": table_image_filename.name,
                 "data": table_df.to_dict(orient="records"),
-                "page_number": element.prov[0].page_no  # Add page number to JSON
+                "page_number": element.prov[0].page_no,  # Add page number to JSON
+                "bbox": bbox  # 添加边界框到 JSON
             })
 
         elif isinstance(element, PictureItem):
@@ -240,7 +257,8 @@ def convert_pdf_to_markdown_with_images():
                 "level": level,
                 "image": picture_image_filename.name,
                 "caption": caption,
-                "page_number": element.prov[0].page_no  # Add page number to JSON
+                "page_number": element.prov[0].page_no,  # Add page number to JSON
+                "bbox": bbox  # 添加边界框到 JSON
             })
 
         else:
@@ -255,7 +273,8 @@ def convert_pdf_to_markdown_with_images():
                         "level": level,
                         "text": text,
                         "label": label,
-                        "page_number": element.prov[0].page_no  # Add page number to JSON
+                        "page_number": element.prov[0].page_no,  # Add page number to JSON
+                        "bbox": bbox  # 添加边界框到 JSON
                     })
 
     # 保存结果

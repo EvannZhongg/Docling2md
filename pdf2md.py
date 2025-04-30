@@ -286,9 +286,9 @@ def convert_pdf_to_markdown_with_images():
     with json_file.open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
 
-    log.info(f"✅ 完成 PDF 解析，耗时 {time.time() - start_time:.2f} 秒")
-    log.info(f"📄 Markdown 文件：{markdown_file.resolve()}")
-    log.info(f"📦 JSON 文件：{json_file.resolve()}")
+    log.info(f"完成 PDF 解析，耗时 {time.time() - start_time:.2f} 秒")
+    log.info(f"Markdown 文件：{markdown_file.resolve()}")
+    log.info(f"JSON 文件：{json_file.resolve()}")
 
 if __name__ == "__main__":
     convert_pdf_to_markdown_with_images()

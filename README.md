@@ -69,7 +69,7 @@ python pdf2md.py
 ```
 或将 `convert_pdf_to_markdown_with_images()` 嵌入你的主流程中。
 
-### 2. 结果输出
+### 3. 结果输出
 - Markdown 文件：`output/<pdf_hash>/<hash>.md`
 - JSON 文件：`output/<pdf_hash>/<hash>.json`
 - 页面图像：`output/<pdf_hash>/page/page-*.png`

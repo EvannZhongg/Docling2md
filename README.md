@@ -24,10 +24,8 @@ cd Docling2md
 ```
 
 ### 2. 安装依赖
-推荐使用 `conda` 创建虚拟环境：
+安装 Python 依赖项：
 ```bash
-conda create -n docling2md python=3.10 -y
-conda activate docling2md
 pip install -r requirements.txt
 ```
 

@@ -5,7 +5,7 @@
 ---
 
 ## 项目简介
-**Docling2md** 是一个文档理解和转换工具，基于 [Docling](https://github.com/Docling/Docling) 框架，并集成了视觉语言模型（VLM）和大语言模型（LLM），可实现：
+**Docling2md** 是一个文档理解和转换工具，基于 [Docling](https://github.com/docling-project/docling.git) 框架，并集成了视觉语言模型（VLM）和大语言模型（LLM），可实现：
 
 - 将 PDF 转换为结构化 Markdown 文本
 - 自动提取标题 / 正文结构

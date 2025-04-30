@@ -107,15 +107,21 @@ python pdf2md.py
 
 ---
 
-## 示例
-使用 `catalog_20220927_ALQ00013.pdf` 生成的 Markdown 示例：
-```md
-# Electrical Characteristics
-| Parameter | Value | Unit |
-|-----------|-------|------|
-| Vz        | 5.6   | V    |
+## 使用视觉模型修复表格示例效果展示
 
-![Graph of IV Curve](./hash-picture-1.png)
+![image](https://github.com/user-attachments/assets/fe9488f9-6a5f-46a0-99b1-a170b1819d19)
+
+```
+| Part Number.Part Number   | Function.Function                       |   Output.Channel | Characteristics.V DD(opr) (V)   | Characteristics.Output Current   | Characteristics.T opr (°C)   | Package.Package   | Protection.Over Current   | Protection.Over Voltage   | Protection.Under Voltage   | Protection.Reverse Battery   | Diagnosis.Over Current   | Diagnosis.Over Voltage   | Diagnosis.Under Voltage   | AEC-Qxxx qualified.AEC-Qxxx qualified   |
+|:--------------------------|:----------------------------------------|-----------------:|:--------------------------------|:---------------------------------|:-----------------------------|:------------------|:--------------------------|:--------------------------|:---------------------------|:-----------------------------|:-------------------------|:-------------------------|:--------------------------|:----------------------------------------|
+| TPD7104AF                 | High-side N-ch MOSFET Gate driver       |                1 | 5 to 18                         | Depends on internal drive        | -40 to 125                   | PS-8              | Adjust- able              | -                         | -                          | ✓                            | ✓                        | - -                      |                           | AEC-Q100                                |
+| TPD7106F                  | High-side N-ch MOSFET Gate driver       |                1 | 4.5 to 27                       | OUT1:+/-10 mA OUT2:0. 4 A (Sink) | -40 to 150                   | SSOP-16           | -                         | -                         | -                          | ✓                            | -                        | -                        | -                         | AEC-Q100                                |
+| TPD7107F                  | High-side N-ch MOSFET Gate driver       |                1 | 5.75 to 26                      | Source:100 μA Sink:5 mAor 270 mA | -40 to 125                   | WSON10A           | ✓                         | ✓                         | ✓                          | ✓                            | ✓                        | ✓                        | ✓                         | AEC-Q100                                |
+| TPD7211F                  | Half-bridge MOSFET Gate driver          |                2 | 5 to 18                         | ±0.5 A max                       | -40 to 125                   | PS-8              | -                         | -                         | -                          | -                            | -                        | -                        | -                         | -                                       |
+| TPD7213FN*                | Half-bridge MOSFET Gate driver          |                2 | V DD 9 to 18 V DD48 12 to 54    | Source:2 A Sink:2 A              | -40 to 150                   | SSOP-16           | -                         | -                         | ✓                          | -                            | -                        | -                        | ✓                         | **                                      |
+| TPD7212F                  | 3 Phase Full- bridge MOSFET Gate driver |                6 | 4.5 to 18                       | Source:1 A Sink:1.5 A            | -40 to 150                   | WQFN32            | -                         | ✓                         | ✓                          | -                            | -                        | ✓                        | ✓                         | AEC-Q100                                |
+| TPD7212FN                 | 3 Phase Full- bridge MOSFET Gate driver |                6 | 4.5 to 18                       | Source:1 A Sink:1.5 A            | -40 to 150                   | SSOP30            | -                         | ✓                         | ✓                          | -                            | -                        | ✓                        | ✓                         | AEC-Q100                                |
+
 ```
 
 ---

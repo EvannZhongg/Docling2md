@@ -24,11 +24,12 @@ cd Docling2md
 ```
 
 ### 2. 安装依赖
-安装 Python 依赖项：
+
+#### 2.1 安装 Python 依赖项：
 ```bash
 pip install -r requirements.txt
 ```
-
+#### 2.2 配置 **poppler**
 解压 `poppler` 压缩包至项目根目录。
 
 ### 3. 配置文件（`config.yaml`）

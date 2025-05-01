@@ -135,11 +135,11 @@ graph TD
 ![709f27681f3bf94551b729283c54046a-table-17](https://github.com/user-attachments/assets/ab583ea5-b8b2-4466-a6ed-ea8b43f21bd9)
 
 ```
-| tD(on) | - | 20 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
-| --- | --- | --- | --- | --- | --- |
-| tR | - | 7 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
+| tD(on)  | - | 20 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
+| ------- | - | -- | - | -- | ---------------------------------------- |
+| tR      | - | 7  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
 | tD(off) | - | 80 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
-| tF | - | 6 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
+| tF      | - | 6  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |
 ```
 
 ---

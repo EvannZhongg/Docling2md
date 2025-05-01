@@ -38,8 +38,7 @@ TEXT_MODEL = config['OPENAI']['model']
 MAX_CONCURRENCY_VLM = config['VLM']['max_concurrency']
 MAX_CONCURRENCY_TEXT = config['OPENAI']['max_concurrency']
 
-input_pdf_path = Path("D:/Personal_Project/SmolDocling/pdfs/APD_Series_203250D.pdf")
-
+input_pdf_path = Path("D:/Docling2md/your_path_to/.pdf")
 
 # 根据 PDF 文件路径生成哈希值
 def generate_hash_from_file(file_path: Path) -> str:

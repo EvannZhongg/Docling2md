@@ -91,9 +91,10 @@ python pdf2md.py
 ├── pdf2md.py
 ├── config.yaml
 ├── prompt/
-│   ├── VLM_prompt.py
-│   ├── text_type_prompt.py
-│   └── table_repair_prompt.py
+│   ├── VLM_prompt.py  #用于添加图片描述 
+│   ├── text_type_prompt.py  #用于判断文本标题/段落
+│   ├── text_repair_prompt.py  #用于修复异常无空格文本
+│   └── table_repair_prompt.py  #用于修复异常表格
 ├── output/
 │   └── <pdf_hash>/
 │       ├── page/

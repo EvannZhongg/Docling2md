@@ -38,7 +38,8 @@ TEXT_MODEL = config['OPENAI']['model']
 MAX_CONCURRENCY_VLM = config['VLM']['max_concurrency']
 MAX_CONCURRENCY_TEXT = config['OPENAI']['max_concurrency']
 
-input_pdf_path = Path("D:/Docling2md/your_path_to/.pdf")
+input_pdf_path = Path("D:/Personal_Project/SmolDocling/pdfs/Gan.pdf")
+
 
 # 根据 PDF 文件路径生成哈希值
 def generate_hash_from_file(file_path: Path) -> str:
@@ -117,7 +118,10 @@ def ask_image_vlm_base64(pil_image: Image.Image, prompt: str = VLM_PROMPT) -> st
         return "[图像描述失败]"
 
 def needs_repair(text: str, threshold: int = 30) -> bool:
-    return any(len(chunk) >= threshold for chunk in re.findall(r'\S+', text))
+    # 匹配连续的纯英文字符串（不包含中文或空格）
+    matches = re.findall(r'[A-Za-z0-9,.\-()]{%d,}' % threshold, text)
+    return len(matches) > 0
+
 
 # 大模型进行英文分词修复
 def ask_repair_text(text: str) -> str:
@@ -257,22 +261,26 @@ def convert_pdf_to_markdown_with_images():
                 sub_images = split_table_image_rows(pil_img)
                 # 拼接不符合尺寸限制的切块
                 sub_images = merge_small_chunks(sub_images)
-                all_chunks = []
+
+                # 🔁 使用局部变量管理该表格的修复任务
+                chunk_futures = []
                 for idx, chunk_img in enumerate(sub_images):
                     future = vlm_executor.submit(ask_table_from_image, chunk_img)
-                    futures.append((future, idx, chunk_img))
+                    chunk_futures.append((future, idx, chunk_img))
+
                 # 收集结果
                 full_md_lines = []
-                for future, idx, chunk_img in futures:
+                for future, idx, chunk_img in chunk_futures:
                     try:
                         chunk_md = future.result()
                         lines = chunk_md.splitlines()
                         if idx == 0:
-                            full_md_lines.extend(lines)  # 保留表头 + 分割线
+                            full_md_lines.extend(lines)  # 表头 + 分隔线
                         else:
-                            full_md_lines.extend(lines[2:])  # 仅添加数据行
+                            full_md_lines.extend(lines[2:])  # 仅数据行
                     except Exception as e:
                         log.warning(f"表格分块处理失败: {e}")
+
                 markdown_lines.append(f"<!-- 表格 {table_counter} 使用 Qwen 修复，已分块拼接 -->")
                 markdown_lines.append("\n".join(full_md_lines))
                 markdown_lines.append("")
@@ -286,6 +294,7 @@ def convert_pdf_to_markdown_with_images():
                     "bbox": bbox
                 })
                 continue  # 跳过原始处理
+
             # ✅ 表格结构正常
             markdown_lines.append(table_df.to_markdown(index=False))
             markdown_lines.append("")

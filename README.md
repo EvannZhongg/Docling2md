@@ -76,6 +76,29 @@ python pdf2md.py
 
 ---
 
+### 4. 流程示意：
+```mermaid
+graph TD
+    A[PDF Document] --> B[DocumentConverter]
+    B --> C[Structured Document]
+    C --> D[Element Iteration]
+
+    D --> E[Text Processing]
+    D --> F[Table Processing]
+    D --> G[Image Processing]
+
+    E --> H[LLM Classification]
+    F --> I[Table Structure Analysis]
+    G --> J[VLM Captioning]
+
+    H --> K[Markdown Output]
+    I --> K
+    J --> K
+
+    K --> L[Markdown File]
+    K --> M[JSON Metadata]
+    K --> N[Extracted Images]
+```
 ## 功能亮点
 
 - **PDF 布局解析**：使用 Docling 提取表格、图片、文本等元素

@@ -38,7 +38,7 @@ TEXT_MODEL = config['OPENAI']['model']
 MAX_CONCURRENCY_VLM = config['VLM']['max_concurrency']
 MAX_CONCURRENCY_TEXT = config['OPENAI']['max_concurrency']
 
-input_pdf_path = Path("D:/Personal_Project/SmolDocling/pdfs/Gan.pdf")
+input_pdf_path = Path("D:/Personal_Project/SmolDocling/pdfs/APD_Series_203250D.pdf")
 
 
 # 根据 PDF 文件路径生成哈希值
@@ -231,59 +231,47 @@ def convert_pdf_to_markdown_with_images():
     )
     conv_res = doc_converter.convert(input_pdf_path)
     document = conv_res.document
-    markdown_lines = []
+
+    markdown_lines_items = []  # 修复：按元素顺序追加
     json_data = []
     table_counter = 0
     picture_counter = 0
 
-    # 获取并保存 PDF 每一页为图片
     convert_pdf_to_images(input_pdf_path, output_dir)
 
-    # 并发任务队列
     vlm_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENCY_VLM)
     text_executor = ThreadPoolExecutor(max_workers=MAX_CONCURRENCY_TEXT)
-
     futures = []
 
     for element, level in document.iterate_items():
-        # 获取元素的边界框
         bbox = get_bbox(element)
         if isinstance(element, TableItem):
             table_counter += 1
-            # 使用哈希值生成图片/表格文件名
             table_image_filename = output_dir / f"{pdf_hash}-table-{table_counter}.png"
             pil_img = element.get_image(document)
             pil_img.save(table_image_filename, "PNG")
             table_df: pd.DataFrame = element.export_to_dataframe()
             if not table_df.columns.is_unique or table_df.shape[1] < 2:
-                log.warning(f"⚠️ 表格 {table_counter} 结构异常，使用 Qwen 多轮图像推理修复")
-                # 自动图像切块
+                log.warning(f"\u26a0\ufe0f 表格 {table_counter} 结构异常，使用 Qwen 多轮图像推理修复")
                 sub_images = split_table_image_rows(pil_img)
-                # 拼接不符合尺寸限制的切块
                 sub_images = merge_small_chunks(sub_images)
-
-                # 🔁 使用局部变量管理该表格的修复任务
                 chunk_futures = []
                 for idx, chunk_img in enumerate(sub_images):
                     future = vlm_executor.submit(ask_table_from_image, chunk_img)
                     chunk_futures.append((future, idx, chunk_img))
-
-                # 收集结果
                 full_md_lines = []
                 for future, idx, chunk_img in chunk_futures:
                     try:
                         chunk_md = future.result()
                         lines = chunk_md.splitlines()
                         if idx == 0:
-                            full_md_lines.extend(lines)  # 表头 + 分隔线
+                            full_md_lines.extend(lines)
                         else:
-                            full_md_lines.extend(lines[2:])  # 仅数据行
+                            full_md_lines.extend(lines[2:])
                     except Exception as e:
                         log.warning(f"表格分块处理失败: {e}")
-
-                markdown_lines.append(f"<!-- 表格 {table_counter} 使用 Qwen 修复，已分块拼接 -->")
-                markdown_lines.append("\n".join(full_md_lines))
-                markdown_lines.append("")
+                markdown = f"<!-- 表格 {table_counter} 使用 Qwen 修复 -->\n" + "\n".join(full_md_lines)
+                markdown_lines_items.append(markdown)
                 json_data.append({
                     "type": "table",
                     "level": level,
@@ -293,11 +281,9 @@ def convert_pdf_to_markdown_with_images():
                     "page_number": element.prov[0].page_no,
                     "bbox": bbox
                 })
-                continue  # 跳过原始处理
-
-            # ✅ 表格结构正常
-            markdown_lines.append(table_df.to_markdown(index=False))
-            markdown_lines.append("")
+                continue
+            markdown = table_df.to_markdown(index=False)
+            markdown_lines_items.append(markdown)
             json_data.append({
                 "type": "table",
                 "level": level,
@@ -306,9 +292,9 @@ def convert_pdf_to_markdown_with_images():
                 "page_number": element.prov[0].page_no,
                 "bbox": bbox
             })
+
         elif isinstance(element, PictureItem):
             picture_counter += 1
-            # 使用哈希值生成图片文件名
             picture_image_filename = output_dir / f"{pdf_hash}-picture-{picture_counter}.png"
             pil_img = element.get_image(document)
             pil_img.save(picture_image_filename, "PNG")
@@ -319,6 +305,7 @@ def convert_pdf_to_markdown_with_images():
                 "page": element.prov[0].page_no,
                 "bbox": bbox
             }))
+            markdown_lines_items.append(future)  # 占位
         else:
             if hasattr(element, "text") and element.text:
                 text = element.text.strip()
@@ -326,7 +313,6 @@ def convert_pdf_to_markdown_with_images():
                     if needs_repair(text):
                         log.info(f"发现异常无空格段，调用分词模型修复: {text}")
                         text = ask_repair_text(text)
-
                     future = text_executor.submit(ask_if_heading, text)
                     futures.append((future, "text", {
                         "text": text,
@@ -334,14 +320,15 @@ def convert_pdf_to_markdown_with_images():
                         "page": element.prov[0].page_no,
                         "bbox": bbox
                     }))
+                    markdown_lines_items.append(future)
 
-    # 等待所有并发任务完成
+    results_map = {}
     for future, task_type, meta in futures:
         try:
             result = future.result()
             if task_type == "picture":
                 caption = result
-                markdown_lines.append(f"![{caption}](./{meta['image_path'].name})")
+                results_map[future] = f"![{caption}](./{meta['image_path'].name})"
                 json_data.append({
                     "type": "picture",
                     "level": meta["level"],
@@ -352,8 +339,8 @@ def convert_pdf_to_markdown_with_images():
                 })
             elif task_type == "text":
                 label = result
-                markdown_lines.append(f"# {meta['text']}" if label == "heading" else meta["text"])
-                markdown_lines.append("")
+                markdown = f"# {meta['text']}" if label == "heading" else meta["text"]
+                results_map[future] = markdown
                 json_data.append({
                     "type": "text",
                     "level": meta["level"],
@@ -365,14 +352,22 @@ def convert_pdf_to_markdown_with_images():
         except Exception as e:
             log.warning(f"并发任务失败: {e}")
 
-    # 关闭线程池
     vlm_executor.shutdown(wait=True)
     text_executor.shutdown(wait=True)
 
-    # 保存结果
+    markdown_lines = []
+    for item in markdown_lines_items:
+        if isinstance(item, str):
+            markdown_lines.append(item)
+            markdown_lines.append("")
+        elif hasattr(item, "result"):
+            markdown_lines.append(results_map.get(item, ""))
+            markdown_lines.append("")
+
     markdown_file = output_dir / f"{pdf_hash}.md"
     with markdown_file.open("w", encoding="utf-8") as f:
         f.write("\n".join(markdown_lines))
+
     json_file = output_dir / f"{pdf_hash}.json"
     with json_file.open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
@@ -380,7 +375,6 @@ def convert_pdf_to_markdown_with_images():
     log.info(f"完成 PDF 解析，耗时 {time.time() - start_time:.2f} 秒")
     log.info(f"Markdown 文件：{markdown_file.resolve()}")
     log.info(f"JSON 文件：{json_file.resolve()}")
-
 
 if __name__ == "__main__":
     convert_pdf_to_markdown_with_images()

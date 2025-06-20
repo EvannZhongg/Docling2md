@@ -50,7 +50,7 @@ OCR:
   enabled: true
 
 POPPLER:
-  path: "D:/your_path_to/poppler/Library/bin"
+  path: "D:/your_path_to/poppler/Library/bin"  #将poppler.zip解压至项目根目录
 ```
 
 ---
